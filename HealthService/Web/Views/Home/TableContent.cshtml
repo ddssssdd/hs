@@ -1,0 +1,20 @@
+﻿@using Web.Common;
+@{
+    ViewBag.Title = "TableContent";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var tablename = ViewBag.tablename;
+    var rows = ViewBag.rows;
+   
+}
+
+<h2>@tablename</h2>
+
+<table id="items"></table>
+
+<script>
+    @{
+        var grid = new JqGrid(rows);
+    }
+    @grid.js_grid("#items");
+ 
+</script>

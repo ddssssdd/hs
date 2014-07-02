@@ -1,0 +1,25 @@
+﻿@using Web.Common;
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var sql = ViewBag.sql;
+    var rows = ViewBag.rows;
+    
+}
+@using (Html.BeginForm("Index", "Data", "POST"))
+{
+    <input type="text" width="100%" id="txt_sql" name="txt_sql"/>
+    <br />
+    <input type="submit" value="Execute" />
+}
+
+
+
+<table id="items"></table>
+
+<script>
+    @{
+        var grid = new JqGrid(rows);
+    }
+    @grid.js_grid("#items");
+ </script>
