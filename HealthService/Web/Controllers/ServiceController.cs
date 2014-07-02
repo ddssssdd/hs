@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
 
@@ -122,6 +124,27 @@ namespace Web.Controllers
             var results = Db.DbHealthService.ExecuteSql(sql);
             return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
         }
+        //体检结果
+        public JsonResult pe_details(String pe_id)
+        {
+            String sql = String.Format(@"select * from view_tijian_xm where main_id={0}", pe_id);
+            var results = Db.DbHealthService.ExecuteSql(sql);
+            sql = String.Format(@"select * from view_tijian_jieg where main_id={0}", pe_id);
+            var results2 = Db.DbHealthService.ExecuteSql(sql);
+            foreach (Dictionary<String,Object> item in results)
+            {
+                List<Dictionary<String, Object>> items = new List<Dictionary<string, object>>();
+                String main_id = item["MAIN_ID"].ToString();
+                foreach (Dictionary<String,Object>  r in results2) { 
+                    if (main_id.Equals(r["MAIN_ID"].ToString()))
+                    {
+                        items.Add(r);
+                    }
+                }
+                item["PE_RESULTS"]=items;
+            }
+             return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
         #endregion
         #region Add/Remove Favorite 
         //收藏/取消食物
@@ -162,5 +185,154 @@ namespace Web.Controllers
             return Json(new {status=true,list=results},JsonRequestBehavior.AllowGet);
         }
         #endregion
+        #region Information
+        //消息列表
+        public JsonResult information(String no)
+        {
+            String sql = @"select * from view_huiy_xiaox where bianhao=:no";
+            Db.Parameter[] list = { new Db.Parameter { name="no",value=no} };
+            var results = Db.DbHealthService.ExecuteSqlWithParams(sql, list);
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        //阅读消息
+        public JsonResult read_information(int id)
+        {
+            Db.Parameter[] list ={ 
+                                     new Db.Parameter { name = "v_id", value = id, type = 2, direction = 1 }
+                                };
+            int result = Db.DbHealthService.ExecuteSP("pack_huiyuan1.ReadMess", list);
+            return Json(new { status = true }, JsonRequestBehavior.AllowGet);
+        }
+        #endregion
+        #region Person center
+        public JsonResult person_center(String no)
+        {
+            
+            String sql_infor = @"select * from view_huiy_xiaox where bianhao=:no";
+            Db.Parameter[] list_infor = { new Db.Parameter { name = "no", value = no } };
+            var results_infor = Db.DbHealthService.ExecuteSqlWithParams(sql_infor, list_infor);
+            String sql_score = @"select * from view_huiy_mub where bianhao=:no";
+            Db.Parameter[] list_score = { new Db.Parameter { name = "no", value = no } };
+            var results_score = Db.DbHealthService.ExecuteSqlWithParams(sql_score, list_score);
+            return Json(new { status = true, result = new { score=results_score,information=results_infor} }, JsonRequestBehavior.AllowGet);
+        }
+        //监控数据来源表
+        public JsonResult ph_check_items(String no)
+        {
+            String sql = @"select * from view_jiankong where bianhao=:no order by shangbao_riqi desc";
+            Db.Parameter[] list = { new Db.Parameter { name = "no", value = no } };
+            var results = Db.DbHealthService.ExecuteSqlWithParams(sql, list);
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        //监控数据定义
+        public JsonResult ph_define_items()
+        {
+            String sql = @"select * from view_jiank_xm";
+
+            var results = Db.DbHealthService.ExecuteSql(sql);
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        //会员监控目标值
+        public JsonResult ph_targets(String no)
+        {
+            String sql = @"select * from view_ huiy_mub where bianhao=:no";
+            Db.Parameter[] list = { new Db.Parameter { name = "no", value = no } };
+            var results = Db.DbHealthService.ExecuteSqlWithParams(sql, list);
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        //健康数据上报
+        public JsonResult ph_add(String no,DateTime monitor_date,String item,String value)
+        
+        {
+            Db.Parameter[] parameters = {
+                                        new Db.Parameter{name="v_bh",value=no},
+                                        new Db.Parameter{name="v_jkd",value=no,type=3},
+                                        new Db.Parameter{name="v_jkx",value=no},
+                                        new Db.Parameter{name="v_jkv",value=no},
+                                        new Db.Parameter{name="v_rt",value=0,type=2,direction=2},
+                                        };
+            int result = Db.DbHealthService.ExecuteSP("pack_huiyuan.UpJiankong", parameters, "v_rt");
+            return Json(new { status = true}, JsonRequestBehavior.AllowGet);
+        }
+        #endregion
+
+        #region Question
+        public JsonResult my_questions(String no)
+        {
+            String sql = @"select * from view_huiyuan_zixun where hy_bianhao=:no";
+            Db.Parameter[] list = { new Db.Parameter { name = "no", value = no } };
+            var results = Db.DbHealthService.ExecuteSqlWithParams(sql, list);
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        //咨询内容提交
+        public JsonResult add_question(String no,String type,String content)
+        {
+            Db.Parameter[] parameters= {
+                             new Db.Parameter{name="v_bh",value=no},
+                             new Db.Parameter{name="v_lx",value=type},
+                             new Db.Parameter{name="v_ms",value=content},
+                             new Db.Parameter{name="v_rt",value=0,type=2,direction=2}
+                             };
+            int result = Db.DbHealthService.ExecuteSP("pack_jiekou.UpZixun", parameters, "v_rt");
+            return Json(new { status = true, result = new { id = result } }, JsonRequestBehavior.AllowGet);
+        }
+        //咨询内容图片上传
+        public JsonResult add_question_file()
+        {
+            return Json(new { status = true }, JsonRequestBehavior.AllowGet);
+        }
+        public ActionResult FileUpload(HttpPostedFileBase file)
+        {
+            if (ModelState.IsValid)
+            {
+                if (file == null)
+                {
+                    ModelState.AddModelError("File", "Please Upload Your file");
+                }
+                else if (file.ContentLength > 0)
+                {
+                    int MaxContentLength = 1024 * 1024 * 3; //3 MB
+                    string[] AllowedFileExtensions = new string[] { ".jpg", ".gif", ".png", ".pdf" };
+
+                    if (!AllowedFileExtensions.Contains(file.FileName.Substring(file.FileName.LastIndexOf('.'))))
+                    {
+                        ModelState.AddModelError("File", "Please file of type: " + string.Join(", ", AllowedFileExtensions));
+                    }
+
+                    else if (file.ContentLength > MaxContentLength)
+                    {
+                        ModelState.AddModelError("File", "Your file is too large, maximum allowed size is: " + MaxContentLength + " MB");
+                    }
+                    else
+                    {
+                        //TO:DO
+
+                        var path = System.Web.HttpContext.Current.Server.MapPath("~" + "file");
+                        file.SaveAs(path);
+                        ModelState.Clear();
+                        ViewBag.Message = "File uploaded successfully";
+                    }
+                }
+            }
+            return View();
+        }
+        #endregion
+        #region PE Files
+        #endregion
+    }
+    public class ReturnStatus
+    {
+        public bool status;
+        public object result;
+        public String message;
+    }
+    public class CustomMultipartFormDataStreamProvider : MultipartFormDataStreamProvider
+    {
+        public CustomMultipartFormDataStreamProvider(string path) : base(path) { }
+        public override string GetLocalFileName(System.Net.Http.Headers.HttpContentHeaders headers)
+        {
+            var name = !string.IsNullOrWhiteSpace(headers.ContentDisposition.FileName) ? headers.ContentDisposition.FileName : "NoName";
+            return DateTime.Now.ToString("yyyyMMddhhmmss") + name.Replace("\"", string.Empty);
+        }
     }
 }

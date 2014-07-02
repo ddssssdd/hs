@@ -278,6 +278,9 @@ namespace Web.Db
                 case 1:
                     result = OracleDbType.Varchar2;
                     break;
+                case 3:
+                    result = OracleDbType.Date;
+                    break;
             }
             return result;
         }
