@@ -1,0 +1,13 @@
+﻿@{
+    ViewBag.Title = "FileUpload";
+}
+
+<h2>FileUpload</h2>
+@using (Html.BeginForm("add_question_file", "Service", FormMethod.Post, new { enctype = "multipart/form-data" }))
+{
+    <input type="file" id="file_pic" name="file_pic"/>
+    <input type="submit" value="Upload" />
+    <input type="hidden" value="0" name="q_id" id="q_id" />
+    <input type="hidden" value="Description" name="description" id="description" />
+
+}

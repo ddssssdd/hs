@@ -6,7 +6,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
-
+using System.IO;
 namespace Web.Controllers
 {
     public class ServiceController : Controller
@@ -184,6 +184,54 @@ namespace Web.Controllers
             var results =Db.DbHealthService.ExecuteSqlWithParams("select * from view_tijian where bianhao=:bianhao",list);
             return Json(new {status=true,list=results},JsonRequestBehavior.AllowGet);
         }
+        [HttpGet]
+        public ActionResult FileUpload()
+        {
+            return View();
+        }
+        [HttpPost]
+        public ActionResult FileUpload(int id)
+        {
+            var file = Request.Files[0];
+            if (file == null)
+            {
+                return Json(new { status = false, message = "没有文件上传" }, JsonRequestBehavior.AllowGet);
+            }
+            else if (file.ContentLength > 0)
+            {
+                int MaxContentLength = 1024 * 1024 * 3; //3 MB
+                string[] AllowedFileExtensions = new string[] { ".jpg", ".gif", ".png", ".pdf" };
+                String ext = file.FileName.Substring(file.FileName.LastIndexOf('.'));
+                if (!AllowedFileExtensions.Contains(ext))
+                {
+                    return Json(new { status = false, message = "只能上传图片文件" }, JsonRequestBehavior.AllowGet);
+                }
+
+                else if (file.ContentLength > MaxContentLength)
+                {
+                    return Json(new { status = false, message = "上传文件最大3M" }, JsonRequestBehavior.AllowGet);
+                }
+                else
+                {
+
+
+                    //var path = System.Web.HttpContext.Current.Server.MapPath("~") + @"pictures\"+file.FileName;
+                    String filename = Guid.NewGuid().ToString("N") + ext;
+                    String foldername = String.Format("{0:yyyyMM}", DateTime.Now);
+                    String path = String.Format(@"\\10.4.30.41\FSimage\{0}\", foldername);
+                    if (!Directory.Exists(path))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+                    var target_file = String.Format("{0}{1}", path, filename);
+                    file.SaveAs(target_file);
+
+                    return Json(new { status = true, result = new { pic_path = String.Format(@"{0}\{1}", foldername, filename) } }, JsonRequestBehavior.AllowGet);
+                }
+            }
+            return Json(new { status = false, message = "程序逻辑出错啦，联系该死的程序员" }, JsonRequestBehavior.AllowGet);
+
+        }
         #endregion
         #region Information
         //消息列表
@@ -235,12 +283,13 @@ namespace Web.Controllers
         //会员监控目标值
         public JsonResult ph_targets(String no)
         {
-            String sql = @"select * from view_ huiy_mub where bianhao=:no";
+            String sql = @"select * from view_huiy_mub where bianhao=:no";
             Db.Parameter[] list = { new Db.Parameter { name = "no", value = no } };
             var results = Db.DbHealthService.ExecuteSqlWithParams(sql, list);
             return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
         }
         //健康数据上报
+        //上报之后在那里查询？
         public JsonResult ph_add(String no,DateTime monitor_date,String item,String value)
         
         {
@@ -265,6 +314,7 @@ namespace Web.Controllers
             return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
         }
         //咨询内容提交
+        //不能运行
         public JsonResult add_question(String no,String type,String content)
         {
             Db.Parameter[] parameters= {
@@ -277,54 +327,101 @@ namespace Web.Controllers
             return Json(new { status = true, result = new { id = result } }, JsonRequestBehavior.AllowGet);
         }
         //咨询内容图片上传
-        public JsonResult add_question_file()
+        public JsonResult add_question_file(int q_id,String description)
         {
-            return Json(new { status = true }, JsonRequestBehavior.AllowGet);
-        }
-        public ActionResult FileUpload(HttpPostedFileBase file)
-        {
-            if (ModelState.IsValid)
+            ReturnStatus rs = file_upload();
+            if (rs.status)
             {
-                if (file == null)
-                {
-                    ModelState.AddModelError("File", "Please Upload Your file");
-                }
-                else if (file.ContentLength > 0)
-                {
-                    int MaxContentLength = 1024 * 1024 * 3; //3 MB
-                    string[] AllowedFileExtensions = new string[] { ".jpg", ".gif", ".png", ".pdf" };
-
-                    if (!AllowedFileExtensions.Contains(file.FileName.Substring(file.FileName.LastIndexOf('.'))))
-                    {
-                        ModelState.AddModelError("File", "Please file of type: " + string.Join(", ", AllowedFileExtensions));
-                    }
-
-                    else if (file.ContentLength > MaxContentLength)
-                    {
-                        ModelState.AddModelError("File", "Your file is too large, maximum allowed size is: " + MaxContentLength + " MB");
-                    }
-                    else
-                    {
-                        //TO:DO
-
-                        var path = System.Web.HttpContext.Current.Server.MapPath("~" + "file");
-                        file.SaveAs(path);
-                        ModelState.Clear();
-                        ViewBag.Message = "File uploaded successfully";
-                    }
-                }
+                int result = Db.DbHealthService.ExecuteSP("pack_jiekou.UpZixunPic", 
+                    new[] { 
+                        new Db.Parameter { name = "v_id", value = q_id,type=2 },
+                        new Db.Parameter { name = "v_file", value = rs.filename,type=1 },
+                        new Db.Parameter { name = "v_sm", value = description,type=1 },
+                    }, "v_rt");
+                return Json(new {status=true});
             }
-            return View();
+            return Json(rs, JsonRequestBehavior.AllowGet);
+        }
+       
+        #endregion
+
+        #region Date with expert
+        public JsonResult experts()
+        {
+            var results = Db.DbHealthService.ExecuteSql("select * from view_zhuanjia");
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        public JsonResult my_appointments(String no)
+        {
+            var results = Db.DbHealthService.ExecuteSqlWithParams("select * from view_yuyue  where hy_bianhao=:no",
+                new []{new Db.Parameter{name="no",value=no}});
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        public JsonResult add_appointment(String no, String name, DateTime appointment_date, String expert_name, String description)
+        {
+            int result = Db.DbHealthService.ExecuteSP("pack_jiekou.UpYuyue",
+                new[] { 
+                    new Db.Parameter{name="v_bh",value=no},
+                    new Db.Parameter{name="v_xm",value=name},
+                    new Db.Parameter{name="v_rq",value=appointment_date,type=3},
+                    new Db.Parameter{name="v_zj",value=expert_name},
+                    new Db.Parameter{name="v_sm",value=description},
+                    new Db.Parameter{name="v_rt",value=0,type=2,direction=2}
+                }, "v_rt");
+            return Json(new { status = true, result = result }, JsonRequestBehavior.AllowGet);
         }
         #endregion
         #region PE Files
         #endregion
+        #region  File Upload process
+        protected ReturnStatus file_upload()
+        {
+            var file = Request.Files[0];
+            if (file == null)
+            {
+                return new ReturnStatus { status = false, message = "没有文件上传" };
+            }
+            else if (file.ContentLength > 0)
+            {
+                int MaxContentLength = 1024 * 1024 * 3; //3 MB
+                string[] AllowedFileExtensions = new string[] { ".jpg", ".gif", ".png", ".pdf" };
+                String ext = file.FileName.Substring(file.FileName.LastIndexOf('.'));
+                if (!AllowedFileExtensions.Contains(ext))
+                {
+                    return new ReturnStatus{ status = false, message = "只能上传图片文件" };
+                }
+
+                else if (file.ContentLength > MaxContentLength)
+                {
+                    return new ReturnStatus { status = false, message = "上传文件最大3M" };
+                }
+                else
+                {
+
+
+                    //var path = System.Web.HttpContext.Current.Server.MapPath("~") + @"pictures\"+file.FileName;
+                    String filename = Guid.NewGuid().ToString("N") + ext;
+                    String foldername = String.Format("{0:yyyyMM}", DateTime.Now);
+                    String path = String.Format(@"\\10.4.30.41\FSimage\{0}\", foldername);
+                    if (!Directory.Exists(path))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+                    var target_file = String.Format("{0}{1}", path, filename);
+                    file.SaveAs(target_file);
+
+                    return new ReturnStatus { status = true, filename =  String.Format(@"{0}\{1}", foldername, filename) };
+                }
+            }
+            return new ReturnStatus{ status = false, message = "程序逻辑出错啦，联系该死的程序员" };
+        }
+        #endregion
+
     }
-    public class ReturnStatus
-    {
+    public class ReturnStatus {
         public bool status;
-        public object result;
         public String message;
+        public String filename;
     }
     public class CustomMultipartFormDataStreamProvider : MultipartFormDataStreamProvider
     {

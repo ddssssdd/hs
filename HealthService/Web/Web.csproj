@@ -366,9 +366,11 @@
     <Content Include="Views\Home\Content.cshtml" />
     <Content Include="Views\Home\TableContent.cshtml" />
     <Content Include="Views\Data\Index.cshtml" />
+    <Content Include="Views\Service\FileUpload.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="pictures\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
