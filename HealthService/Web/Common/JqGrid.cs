@@ -49,12 +49,14 @@ namespace Web.Common
             sb.Append(@"   colModel: [" + String.Join(",", columnlist.ToArray(typeof(String)) as String[]));
             sb.Append( @"   ],");
             sb.Append( @"   multiselect: true,");
+            sb.Append(@"    onSelectRow:row_select,");
             sb.Append( @"   caption: ''");
             sb.Append( @"   });");
             sb.Append(@"   var mydata = [" + String.Join(",", datas.ToArray(typeof(String)) as String[]));
             sb.Append( @"   ];");
             sb.Append( @"   for (var i = 0; i <= mydata.length; i++)");
-            sb.Append( @"   jQuery('"+tname+"').jqGrid('addRowData', i + 1, mydata[i]);");            
+            sb.Append( @"   jQuery('"+tname+"').jqGrid('addRowData', i + 1, mydata[i]);");
+            
             return MvcHtmlString.Create(sb.ToString());
         }
     }

@@ -9,9 +9,33 @@ using System.Web.Mvc;
 using System.IO;
 namespace Web.Controllers
 {
+    /// <summary>
+    /// Service for cellphone to access
+    /// </summary>
     public class ServiceController : Controller
     {
         #region User Login
+        /// <summary>
+        /// 登录
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        /// <returns>
+        /// <param name="user_password">密码</param>
+        /// <param name="bianhao">会员编号</param>
+        /// <param name="xingming">姓名</param>
+        /// <param name="xingbie">性别</param>
+        /// <param name="zhaopian">照片地址</param>
+        /// <param name="dianhua">联系电话</param>
+        /// <param name="huiyuan_dengji">等级</param>
+        /// <param name="huiyuan_jifen">积分</param>
+        /// <param name="dizhi_sheng">省</param>
+        /// <param name="dizhi_shi">市</param>
+        /// <param name="dizhi_qu">县区</param>
+        /// <param name="dizhi">地址</param>
+        /// <param name="shengao">身高</param>
+        /// <param name="tizhong">体重</param>
+        /// </returns>
         public JsonResult login(String username,String password)
         {
             String sql = String.Format(@"select md5('{1}') as curPass,a.* from view_huiyuan a where a.dianhua='{0}'",username,password);
@@ -101,7 +125,7 @@ namespace Web.Controllers
             return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
         }
         #endregion
-        #region Physical Examination
+        #region Physical Examination 自我体检
         //体检
 
         public JsonResult physical_examination(String no) 
@@ -233,7 +257,7 @@ namespace Web.Controllers
 
         }
         #endregion
-        #region Information
+        #region Information 最新消息
         //消息列表
         public JsonResult information(String no)
         {
@@ -252,7 +276,7 @@ namespace Web.Controllers
             return Json(new { status = true }, JsonRequestBehavior.AllowGet);
         }
         #endregion
-        #region Person center
+        #region Person center 用户中心
         public JsonResult person_center(String no)
         {
             
@@ -305,7 +329,7 @@ namespace Web.Controllers
         }
         #endregion
 
-        #region Question
+        #region Question 咨询交互
         public JsonResult my_questions(String no)
         {
             String sql = @"select * from view_huiyuan_zixun where hy_bianhao=:no";
@@ -337,15 +361,21 @@ namespace Web.Controllers
                         new Db.Parameter { name = "v_id", value = q_id,type=2 },
                         new Db.Parameter { name = "v_file", value = rs.filename,type=1 },
                         new Db.Parameter { name = "v_sm", value = description,type=1 },
+                        new Db.Parameter{name="v_rt",value=0,type=2,direction=2}
                     }, "v_rt");
                 return Json(new {status=true});
             }
             return Json(rs, JsonRequestBehavior.AllowGet);
         }
+        public JsonResult get_question_file(int q_id)
+        {
+            var results = Db.DbHealthService.ExecuteSqlWithParams(@"select * from view_zixun_pic where zixun_id=:id", new[] { new Db.Parameter{name="id",value=q_id,type=2}});
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
        
         #endregion
 
-        #region Date with expert
+        #region Date with expert 预约专家
         public JsonResult experts()
         {
             var results = Db.DbHealthService.ExecuteSql("select * from view_zhuanjia");
@@ -371,7 +401,92 @@ namespace Web.Controllers
             return Json(new { status = true, result = result }, JsonRequestBehavior.AllowGet);
         }
         #endregion
-        #region PE Files
+        #region PE Files 体检信息上传查询
+        //查询上报体检信息
+        public JsonResult pefiles(String no)
+        {
+            String sql = @"select * from view_tijian_up where hy_bianhao=:no";
+            var results = Db.DbHealthService.ExecuteSqlWithParams(sql, new[] { new Db.Parameter{name="no",value=no}});
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        //上报体检信息
+        public JsonResult pefiles_upload_information(String no, DateTime exam_date, String hospital)
+        {
+            Db.Parameter[] parameters = {new Db.Parameter{name="v_bh",value=no},
+                                        new Db.Parameter{name="v_rq",value=exam_date,type=3},
+                                        new Db.Parameter{name="v_yy",value=hospital},
+                                        new Db.Parameter{name="v_rt",value=0,type=2,direction=2}
+                                        };
+            int result = Db.DbHealthService.ExecuteSP("pack_jiekou.UpTijian",parameters,"v_rt");
+            return Json(new { status = true, result = new { pe_id=result} }, JsonRequestBehavior.AllowGet);
+        }
+        //上传体检照片
+        public JsonResult pefiles_upload_file(int pe_id, String description)
+        {
+            ReturnStatus rs = file_upload();
+            if (rs.status)
+            {
+                int result = Db.DbHealthService.ExecuteSP("pack_jiekou.UpTijianPic",
+                    new[] { 
+                        new Db.Parameter { name = "v_id", value = pe_id,type=2 },
+                        new Db.Parameter { name = "v_file", value = rs.filename,type=1 },
+                        new Db.Parameter { name = "v_sm", value = description,type=1 },
+                        new Db.Parameter{name="v_rt",value=0,type=2,direction=2}
+                    }, "v_rt");
+                return Json(new { status = true,result=result });
+            }
+            return Json(rs, JsonRequestBehavior.AllowGet);
+        }
+        public JsonResult pefiles_get_upload_files(int pe_id) {
+            var results = Db.DbHealthService.ExecuteSqlWithParams(@"select * from view_tijian_uppic where tijian_id=:id", new[] { new Db.Parameter { name = "id", value = pe_id, type = 2 } });
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        #endregion
+        #region Suggestions 运动，饮食建议用药记录、健康宣教
+        //运动建议
+        public JsonResult suggestions_sport(String no)
+        {
+            var results = Db.DbHealthService.ExecuteSqlWithParams(@"
+                    Select  bianhao, jianyi_riqi, xingming, jianyi_zhuanjia,beizhu, yundong_jy,yund_tup 
+                    from view_jianyi where bianhao=:no", 
+                    new[] { new Db.Parameter{name="no",value=no}}
+                    
+                );
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        //饮食建议
+        public JsonResult suggestions_food(String no)
+        {
+            var results = Db.DbHealthService.ExecuteSqlWithParams(@"
+                    Select  bianhao, jianyi_riqi, xingming, jianyi_zhuanjia,
+                            beizhu, yinshi_jy,yinsh_tup 
+                            from view_jianyi where bianhao=:no",
+                    new[] { new Db.Parameter { name = "no", value = no } }
+
+                );
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        //用药记录
+        public JsonResult medicine_records(String no)
+        {
+            var results = Db.DbHealthService.ExecuteSqlWithParams(@"
+                    Select * from view_huiy_yongyao where bianhao=:no",
+                    new[] { new Db.Parameter { name = "no", value = no } }
+
+                );
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        //健康宣教
+        public JsonResult health_broadcast(String no)
+        {
+            var results = Db.DbHealthService.ExecuteSqlWithParams(@"
+                    Select * from view_jiaoy_neir where (bianhao=:no or bianhao='ALL')",
+                    new[] { new Db.Parameter { name = "no", value = no } }
+
+                );
+            return Json(new { status = true, result = results }, JsonRequestBehavior.AllowGet);
+        }
+        
         #endregion
         #region  File Upload process
         protected ReturnStatus file_upload()

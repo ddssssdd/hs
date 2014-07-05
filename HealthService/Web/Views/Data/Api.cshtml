@@ -1,0 +1,47 @@
+﻿@using Web.Common;
+@{
+    ViewBag.Title = "Api";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var rows = ViewBag.items;
+}
+
+<h2>Api</h2>
+@using (Html.BeginForm("Api", "Data", "POST"))
+{ 
+    
+     <input type="text" style="width:90%;" id="name" name="name"/>
+    <input type="text" style="width:90%;" id="url" name="url"/>
+    <textarea  rows="10" style="width:90%;" id="description" name="description"></textarea>
+    
+    
+    <input type="hidden" id="item_id" name="item_id" value="0"/>
+    <br />
+    <input type="button" onclick="clear_content();" value="新建" />
+    <input type="submit" style="width:100px;" Value="Save"/>
+}
+
+<table id="items"></table>
+<script>
+    @{
+        var grid = new JqGrid(rows);
+    }
+    @grid.js_grid("#items");
+
+    function row_select(id)
+    {
+        var row_id = id * 1-1;
+        var item = mydata[row_id];
+        $("#item_id").val(item.ROW_ID);
+        $("#name").val(item.JK_MING);
+        $("#url").val(item.JK_URL);
+        $("#description").val(item.JK_MIAOSH);
+    }
+    function clear_content()
+    {
+        $("#item_id").val(0);
+        $("#name").val("");
+        $("#url").val("");
+        $("#description").val("");
+    }
+
+</script>

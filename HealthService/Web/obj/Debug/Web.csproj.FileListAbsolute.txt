@@ -170,6 +170,6 @@ E:\programs\HealthService\HealthService\Web\bin\ko\System.Spatial.resources.dll
 E:\programs\HealthService\HealthService\Web\bin\ru\System.Spatial.resources.dll
 E:\programs\HealthService\HealthService\Web\bin\zh-Hans\System.Spatial.resources.dll
 E:\programs\HealthService\HealthService\Web\bin\zh-Hant\System.Spatial.resources.dll
-E:\programs\HealthService\HealthService\Web\obj\Debug\Web.csprojResolveAssemblyReference.cache
 E:\programs\HealthService\HealthService\Web\obj\Debug\Web.dll
 E:\programs\HealthService\HealthService\Web\obj\Debug\Web.pdb
+E:\programs\HealthService\HealthService\Web\obj\Debug\Web.csprojResolveAssemblyReference.cache
