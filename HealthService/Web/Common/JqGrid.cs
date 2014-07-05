@@ -37,7 +37,7 @@ namespace Web.Common
                 ArrayList tempItems = new ArrayList();
                 for (int j = 0; j < tempData.Count; j++)
                 {
-                    tempItems.Add(String.Format("{0}:'{1}'", fields[j], tempData[j]));
+                    tempItems.Add(String.Format("{0}:'{1}'", fields[j], tempData[j].ToString().Replace("\r\n",@" \ ")));
                 }
                 datas.Add("{"+String.Join(",", tempItems.ToArray(typeof(String)) as String[])+"}");
             }

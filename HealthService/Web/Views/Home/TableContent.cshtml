@@ -16,5 +16,9 @@
         var grid = new JqGrid(rows);
     }
     @grid.js_grid("#items");
- 
+    function row_select(id) {
+        var row_id = id * 1 - 1;
+        var item = mydata[row_id];
+        console.log(item);
+    }
 </script>

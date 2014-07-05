@@ -1,10 +1,19 @@
 ﻿@using Web.Common;
+@using System.Collections;
+@using System.Collections.Generic;
 @{
     ViewBag.Title = "Api";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var rows = ViewBag.items;
+    
 }
+<style type="text/css">
+    table td {
+        border:1px solid #333;
+    }
 
+
+</style>
 <h2>Api</h2>
 @using (Html.BeginForm("Api", "Data", "POST"))
 { 
@@ -19,14 +28,35 @@
     <input type="button" onclick="clear_content();" value="新建" />
     <input type="submit" style="width:100px;" Value="Save"/>
 }
+<br />
 
+<table style="width:100%;border:1px;">
+    @foreach (ArrayList items in rows)
+    {
+        <tr onclick="row_select(this);">
+            
+            @foreach (String item in items)
+            { 
+                <td style="text-align:center;">
+                    @item
+                </td>
+            }
+            <td>
+                <a href="~/@Html.Raw(items[2].ToString())" target="_blank">Try this</a>
+            </td>
+        </tr>
+    }
+
+</table>
 <table id="items"></table>
 <script>
+    @*
     @{
         var grid = new JqGrid(rows);
     }
     @grid.js_grid("#items");
-
+    
+    var 
     function row_select(id)
     {
         var row_id = id * 1-1;
@@ -36,6 +66,7 @@
         $("#url").val(item.JK_URL);
         $("#description").val(item.JK_MIAOSH);
     }
+    *@
     function clear_content()
     {
         $("#item_id").val(0);
@@ -43,5 +74,16 @@
         $("#url").val("");
         $("#description").val("");
     }
+    var current;
+    function row_select(tr)
+    {
+        current = tr;
+        console.log(tr);
+        $("#item_id").val($(current).children("td").eq(0).html().trim());
+        $("#name").val($(current).children("td").eq(1).html().trim());
+        $("#url").val($(current).children("td").eq(2).html().trim());
+        $("#description").val($(current).children("td").eq(3).html().trim());
+    }
+   
 
 </script>

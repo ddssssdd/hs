@@ -29,7 +29,7 @@ namespace Web.Controllers
         [HttpGet]
         public ActionResult Api()
         {
-            var result = Db.DbHealthService.executeSqlToList(@"select * from view_app_inter");
+            var result = Db.DbHealthService.executeSqlToList(@"select * from view_app_inter order by row_id");
             ViewBag.items = result;
             return View();
         }
@@ -58,7 +58,7 @@ namespace Web.Controllers
             }
 
             int id = Db.DbHealthService.ExecuteSP("pack_jiekou.InsertJkInfo", parameters, "v_rt");
-            var result = Db.DbHealthService.executeSqlToList(@"select * from view_app_inter");
+            var result = Db.DbHealthService.executeSqlToList(@"select * from view_app_inter order by row_id");
             ViewBag.items = result;
             return View();
         }
